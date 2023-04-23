@@ -6,8 +6,6 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 
-openai.api_key = "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"
-
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
@@ -24,37 +22,45 @@ class Application(tk.Frame):
         self.create_widgets()
 
     def create_widgets(self):
+        # API Key 輸入欄位
+        self.api_key_label = tk.Label(self.master, text="API Key:")
+        self.api_key_label.grid(row=0, column=0)
+
+        self.api_key_var = tk.StringVar(value=openai.api_key)
+        self.api_key_entry = tk.Entry(self.master, textvariable=self.api_key_var)
+        self.api_key_entry.grid(row=0, column=1)
+
         # 選擇音訊檔案
         self.file_label = tk.Label(self.master, text="Select audio file:")
-        self.file_label.grid(row=0, column=0)
+        self.file_label.grid(row=1, column=0)
 
         self.file_button = tk.Button(self.master, text="Browse", command=self.select_file)
-        self.file_button.grid(row=0, column=1)
+        self.file_button.grid(row=1, column=1)
 
         # 選擇語言
         self.lang_label = tk.Label(self.master, text="Select language:")
-        self.lang_label.grid(row=1, column=0)
+        self.lang_label.grid(row=2, column=0)
 
         self.lang_var = tk.StringVar(value="繁體中文")
         self.lang_options = list(self.language_mapping.keys())
 
         self.lang_menu = tk.OptionMenu(self.master, self.lang_var, *self.lang_options)
-        self.lang_menu.grid(row=1, column=1)
+        self.lang_menu.grid(row=2, column=1)
 
         # 轉錄按鈕
         self.transcribe_button = tk.Button(self.master, text="Transcribe", command=self.transcribe)
-        self.transcribe_button.grid(row=2, column=1, pady=10)
+        self.transcribe_button.grid(row=3, column=1, pady=10)
 
         # 轉錄進度條
         self.progressbar = tk.ttk.Progressbar(self.master, orient="horizontal", length=300, mode="determinate")
-        self.progressbar.grid(row=3, column=0, columnspan=2, pady=10)
+        self.progressbar.grid(row=4, column=0, columnspan=2, pady=10)
 
         # 轉錄結果
         self.result_label = tk.Label(self.master, text="Transcription result:")
-        self.result_label.grid(row=4, column=0, pady=10)
+        self.result_label.grid(row=5, column=0, pady=10)
 
         self.result_text = tk.Text(self.master, width=50, height=10, state=tk.DISABLED)
-        self.result_text.grid(row=5, column=0, columnspan=2)
+        self.result_text.grid(row=6, column=0, columnspan=2)
 
     def select_file(self):
         self.file_name = filedialog.askopenfilename()
@@ -67,6 +73,9 @@ class Application(tk.Frame):
                 return
 
             language = self.lang_var.get()
+
+            # 設置API Key
+            openai.api_key = self.api_key_var.get()
 
             # 開始轉錄
             self.progressbar["value"] = 0
@@ -130,16 +139,22 @@ class Application(tk.Frame):
 
         except openai.error.APIError as e:
             tk.messagebox.showerror("Error", "Transcription failed: " + str(e))
-
+            self.transcribe_button.config(state=tk.NORMAL)
+            self.file_button.config(state=tk.NORMAL)
+            self.lang_menu.config(state=tk.NORMAL)
             # 停止進度條
             self.progressbar.stop()
             self.progressbar["value"] = 0
 
+        except openai.error.InvalidRequestError as e:
+            tk.messagebox.showerror("Error", str(e))
             self.transcribe_button.config(state=tk.NORMAL)
             self.file_button.config(state=tk.NORMAL)
             self.lang_menu.config(state=tk.NORMAL)
-
-        except openai.error.InvalidRequestError as e:
+            # 停止進度條
+            self.progressbar.stop()
+            self.progressbar["value"] = 0
+        except openai.error.AuthenticationError as e:
             tk.messagebox.showerror("Error", str(e))
             self.transcribe_button.config(state=tk.NORMAL)
             self.file_button.config(state=tk.NORMAL)

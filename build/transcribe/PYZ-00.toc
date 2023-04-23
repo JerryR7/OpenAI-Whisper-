@@ -1,4 +1,4 @@
-('/Users/linyuting/PycharmProjects/open_ai_whisper_1_transcribe-main/build/transcribe/PYZ-00.pyz',
+('/Users/linyuting/Projects/PythonProjects/OpenAI-Whisper-Tool/build/transcribe/PYZ-00.pyz',
  [('__future__',
    '/usr/local/Cellar/python@3.11/3.11.3/Frameworks/Python.framework/Versions/3.11/lib/python3.11/__future__.py',
    'PYMODULE'),
