@@ -20,7 +20,7 @@ class Application(tk.Frame):
             "日本語": "ja",
             "한국어": "ko"
         }
-        self.show_time_mapping = {
+        self.timeline_mapping = {
             "Yes": "srt",
             "No": "text"
         }
@@ -53,14 +53,14 @@ class Application(tk.Frame):
         self.lang_menu.grid(row=2, column=1)
 
         # 是否顯示時間軸
-        self.show_time_label = tk.Label(self.master, text="Generate timeline:")
-        self.show_time_label.grid(row=3, column=0)
+        self.timeline_label = tk.Label(self.master, text="Generate timeline:")
+        self.timeline_label.grid(row=3, column=0)
 
-        self.show_time_var = tk.StringVar(value="Yes")
-        self.show_time_options = list(self.show_time_mapping.keys())
+        self.timeline_var = tk.StringVar(value="Yes")
+        self.timeline_options = list(self.timeline_mapping.keys())
 
-        self.show_time_menu = tk.OptionMenu(self.master, self.show_time_var, *self.show_time_options)
-        self.show_time_menu.grid(row=3, column=1)
+        self.timeline_menu = tk.OptionMenu(self.master, self.timeline_var, *self.timeline_options)
+        self.timeline_menu.grid(row=3, column=1)
 
         # 轉錄按鈕
         self.transcribe_button = tk.Button(self.master, text="Transcribe", command=self.transcribe)
@@ -88,7 +88,7 @@ class Application(tk.Frame):
                 return
 
             language = self.lang_var.get()
-            timeline = self.show_time_var.get()
+            timeline = self.timeline_var.get()
 
             # 設置API Key
             openai.api_key = self.api_key_var.get()
@@ -109,56 +109,55 @@ class Application(tk.Frame):
             self.transcribe_button.config(state=tk.NORMAL)
             self.file_button.config(state=tk.NORMAL)
             self.lang_menu.config(state=tk.NORMAL)
+            self.timeline_menu.config(state=tk.NORMAL)
 
     def do_transcribe(self, file_name, language, timeline):
         try:
             self.transcribe_button.config(state=tk.DISABLED)
             self.file_button.config(state=tk.DISABLED)
             self.lang_menu.config(state=tk.DISABLED)
+            self.timeline_menu.config(state=tk.DISABLED)
 
             with open(file_name, "rb") as audio_file:
                 transcription = openai.Audio.transcribe(
                     model="whisper-1",
                     file=audio_file,
-                    response_format=self.show_time_mapping[timeline],
+                    response_format=self.timeline_mapping[timeline],
                     language=self.language_mapping[language]
                 )
 
-            try:
-                text = json.loads(transcription)
-            except json.decoder.JSONDecodeError as e:
-                text = transcription
-
-            lines = text.split('\n')
-            new_lines = [line.replace(')', '') for line in lines if not line.startswith('HTTP')]
-            new_text = '\n'.join(new_lines).strip() + '\n'
+            # lines = text.split('\n')
+            # new_lines = [line.replace(')', '') for line in lines if not line.startswith('HTTP')]
+            # new_text = '\n'.join(new_lines).strip() + '\n'
 
             # 利用 os.path 模組操作檔案路徑
-            out_file_name = os.path.splitext(file_name)[0] + ".srt"
+            out_file_name = os.path.splitext(file_name)[0] + "." + self.timeline_mapping[timeline]
             with open(out_file_name, "w") as f:
-                f.write(new_text)
+                f.write(transcription)
 
             # 顯示轉錄結果
             self.result_text.config(state=tk.NORMAL)
             self.result_text.delete("1.0", tk.END)
-            self.result_text.insert(tk.END, new_text)
+            self.result_text.insert(tk.END, transcription)
             self.result_text.config(state=tk.DISABLED)
 
             # 停止進度條
             self.progressbar.stop()
             self.progressbar["value"] = 100
 
-            tk.messagebox.showinfo("Success", "Transcription completed successfully!")
+            tk.messagebox.showinfo("Success", "Transcription completed successfully!", parent=self.master)
 
             self.transcribe_button.config(state=tk.NORMAL)
             self.file_button.config(state=tk.NORMAL)
             self.lang_menu.config(state=tk.NORMAL)
+            self.timeline_menu.config(state=tk.NORMAL)
 
         except openai.error.APIError as e:
             tk.messagebox.showerror("Error", "Transcription failed: " + str(e))
             self.transcribe_button.config(state=tk.NORMAL)
             self.file_button.config(state=tk.NORMAL)
             self.lang_menu.config(state=tk.NORMAL)
+            self.timeline_menu.config(state=tk.NORMAL)
             # 停止進度條
             self.progressbar.stop()
             self.progressbar["value"] = 0
@@ -168,6 +167,7 @@ class Application(tk.Frame):
             self.transcribe_button.config(state=tk.NORMAL)
             self.file_button.config(state=tk.NORMAL)
             self.lang_menu.config(state=tk.NORMAL)
+            self.timeline_menu.config(state=tk.NORMAL)
             # 停止進度條
             self.progressbar.stop()
             self.progressbar["value"] = 0
@@ -176,6 +176,7 @@ class Application(tk.Frame):
             self.transcribe_button.config(state=tk.NORMAL)
             self.file_button.config(state=tk.NORMAL)
             self.lang_menu.config(state=tk.NORMAL)
+            self.timeline_menu.config(state=tk.NORMAL)
             # 停止進度條
             self.progressbar.stop()
             self.progressbar["value"] = 0

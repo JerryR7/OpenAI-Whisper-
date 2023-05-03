@@ -1,3 +1,0 @@
-([('transcribe',
-   '/Users/linyuting/Projects/PythonProjects/OpenAI-Whisper-Tool/dist/transcribe',
-   'EXECUTABLE')],)
