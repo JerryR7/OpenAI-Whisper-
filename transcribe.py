@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 
+
 class Application(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
@@ -18,6 +19,10 @@ class Application(tk.Frame):
             "繁體中文": "zh",
             "日本語": "ja",
             "한국어": "ko"
+        }
+        self.show_time_mapping = {
+            "Yes": "srt",
+            "No": "text"
         }
         self.create_widgets()
 
@@ -47,20 +52,30 @@ class Application(tk.Frame):
         self.lang_menu = tk.OptionMenu(self.master, self.lang_var, *self.lang_options)
         self.lang_menu.grid(row=2, column=1)
 
+        # 是否顯示時間軸
+        self.show_time_label = tk.Label(self.master, text="Generate timeline:")
+        self.show_time_label.grid(row=3, column=0)
+
+        self.show_time_var = tk.StringVar(value="Yes")
+        self.show_time_options = list(self.show_time_mapping.keys())
+
+        self.show_time_menu = tk.OptionMenu(self.master, self.show_time_var, *self.show_time_options)
+        self.show_time_menu.grid(row=3, column=1)
+
         # 轉錄按鈕
         self.transcribe_button = tk.Button(self.master, text="Transcribe", command=self.transcribe)
-        self.transcribe_button.grid(row=3, column=1, pady=10)
+        self.transcribe_button.grid(row=4, column=1, pady=10)
 
         # 轉錄進度條
         self.progressbar = tk.ttk.Progressbar(self.master, orient="horizontal", length=300, mode="determinate")
-        self.progressbar.grid(row=4, column=0, columnspan=2, pady=10)
+        self.progressbar.grid(row=5, column=0, columnspan=2, pady=10)
 
         # 轉錄結果
         self.result_label = tk.Label(self.master, text="Transcription result:")
-        self.result_label.grid(row=5, column=0, pady=10)
+        self.result_label.grid(row=6, column=0, pady=10)
 
         self.result_text = tk.Text(self.master, width=50, height=10, state=tk.DISABLED)
-        self.result_text.grid(row=6, column=0, columnspan=2)
+        self.result_text.grid(row=7, column=0, columnspan=2)
 
     def select_file(self):
         self.file_name = filedialog.askopenfilename()
@@ -73,6 +88,7 @@ class Application(tk.Frame):
                 return
 
             language = self.lang_var.get()
+            timeline = self.show_time_var.get()
 
             # 設置API Key
             openai.api_key = self.api_key_var.get()
@@ -82,7 +98,7 @@ class Application(tk.Frame):
             self.progressbar["maximum"] = 100
             self.progressbar.start()
 
-            threading.Thread(target=self.do_transcribe, args=(self.file_name, language)).start()
+            threading.Thread(target=self.do_transcribe, args=(self.file_name, language, timeline)).start()
         except Exception as e:
             tk.messagebox.showerror("Error", str(e))
 
@@ -93,7 +109,8 @@ class Application(tk.Frame):
             self.transcribe_button.config(state=tk.NORMAL)
             self.file_button.config(state=tk.NORMAL)
             self.lang_menu.config(state=tk.NORMAL)
-    def do_transcribe(self, file_name, language):
+
+    def do_transcribe(self, file_name, language, timeline):
         try:
             self.transcribe_button.config(state=tk.DISABLED)
             self.file_button.config(state=tk.DISABLED)
@@ -103,8 +120,8 @@ class Application(tk.Frame):
                 transcription = openai.Audio.transcribe(
                     model="whisper-1",
                     file=audio_file,
-                    response_format="srt",
-                    language = self.language_mapping[language]
+                    response_format=self.show_time_mapping[timeline],
+                    language=self.language_mapping[language]
                 )
 
             try:
@@ -168,4 +185,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = Application(master=root)
     app.mainloop()
-
