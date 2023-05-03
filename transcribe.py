@@ -1,4 +1,3 @@
-import json
 import openai
 import os
 import threading
