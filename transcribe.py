@@ -4,6 +4,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
+from tkinter import messagebox
 
 
 class Application(tk.Frame):
@@ -81,41 +82,26 @@ class Application(tk.Frame):
         self.file_label.config(text="Selected file: " + os.path.basename(self.file_name))
 
     def transcribe(self):
-        try:
-            if not hasattr(self, "file_name"):
-                tk.messagebox.showerror("Error", "Please select an audio file first!")
-                return
+        if not hasattr(self, "file_name"):
+            self.show_error_message("Please select an audio file first!")
+            return
 
-            language = self.lang_var.get()
-            timeline = self.timeline_var.get()
+        language = self.lang_var.get()
+        timeline = self.timeline_var.get()
 
-            # 設置API Key
-            openai.api_key = self.api_key_var.get()
+        # 設置API Key
+        openai.api_key = self.api_key_var.get()
 
-            # 開始轉錄
-            self.progressbar["value"] = 0
-            self.progressbar["maximum"] = 100
-            self.progressbar.start()
+        # 開始轉錄
+        self.progressbar["value"] = 0
+        self.progressbar["maximum"] = 100
+        self.progressbar.start()
 
-            threading.Thread(target=self.do_transcribe, args=(self.file_name, language, timeline)).start()
-        except Exception as e:
-            tk.messagebox.showerror("Error", str(e))
-
-            # 停止進度條
-            self.progressbar.stop()
-            self.progressbar["value"] = 0
-
-            self.transcribe_button.config(state=tk.NORMAL)
-            self.file_button.config(state=tk.NORMAL)
-            self.lang_menu.config(state=tk.NORMAL)
-            self.timeline_menu.config(state=tk.NORMAL)
+        threading.Thread(target=self.do_transcribe, args=(self.file_name, language, timeline)).start()
 
     def do_transcribe(self, file_name, language, timeline):
         try:
-            self.transcribe_button.config(state=tk.DISABLED)
-            self.file_button.config(state=tk.DISABLED)
-            self.lang_menu.config(state=tk.DISABLED)
-            self.timeline_menu.config(state=tk.DISABLED)
+            self.set_controls_state(tk.DISABLED)
 
             with open(file_name, "rb") as audio_file:
                 transcription = openai.Audio.transcribe(
@@ -125,60 +111,44 @@ class Application(tk.Frame):
                     language=self.language_mapping[language]
                 )
 
-            # lines = text.split('\n')
-            # new_lines = [line.replace(')', '') for line in lines if not line.startswith('HTTP')]
-            # new_text = '\n'.join(new_lines).strip() + '\n'
-
-            # 利用 os.path 模組操作檔案路徑
             out_file_name = os.path.splitext(file_name)[0] + "." + self.timeline_mapping[timeline]
             with open(out_file_name, "w") as f:
                 f.write(transcription)
 
-            # 顯示轉錄結果
-            self.result_text.config(state=tk.NORMAL)
-            self.result_text.delete("1.0", tk.END)
-            self.result_text.insert(tk.END, transcription)
-            self.result_text.config(state=tk.DISABLED)
-
-            # 停止進度條
-            self.progressbar.stop()
-            self.progressbar["value"] = 100
-
-            tk.messagebox.showinfo("Success", "Transcription completed successfully!", parent=self.master)
-
-            self.transcribe_button.config(state=tk.NORMAL)
-            self.file_button.config(state=tk.NORMAL)
-            self.lang_menu.config(state=tk.NORMAL)
-            self.timeline_menu.config(state=tk.NORMAL)
+            self.display_transcription_result(transcription)
+            self.show_success_message("Transcription completed successfully!")
 
         except openai.error.APIError as e:
-            tk.messagebox.showerror("Error", "Transcription failed: " + str(e))
-            self.transcribe_button.config(state=tk.NORMAL)
-            self.file_button.config(state=tk.NORMAL)
-            self.lang_menu.config(state=tk.NORMAL)
-            self.timeline_menu.config(state=tk.NORMAL)
-            # 停止進度條
+            self.show_error_message(f"Transcription failed: {str(e)}")
+
+        except openai.error.AuthenticationError as e:
+            self.show_error_message("Invalid API Key. Please check your API Key and try again.")
+
+        except Exception as e:
+            self.show_error_message(str(e))
+
+        finally:
+            self.set_controls_state(tk.NORMAL)
             self.progressbar.stop()
             self.progressbar["value"] = 0
 
-        except openai.error.InvalidRequestError as e:
-            tk.messagebox.showerror("Error", str(e))
-            self.transcribe_button.config(state=tk.NORMAL)
-            self.file_button.config(state=tk.NORMAL)
-            self.lang_menu.config(state=tk.NORMAL)
-            self.timeline_menu.config(state=tk.NORMAL)
-            # 停止進度條
-            self.progressbar.stop()
-            self.progressbar["value"] = 0
-        except openai.error.AuthenticationError as e:
-            tk.messagebox.showerror("Error", str(e))
-            self.transcribe_button.config(state=tk.NORMAL)
-            self.file_button.config(state=tk.NORMAL)
-            self.lang_menu.config(state=tk.NORMAL)
-            self.timeline_menu.config(state=tk.NORMAL)
-            # 停止進度條
-            self.progressbar.stop()
-            self.progressbar["value"] = 0
+    def set_controls_state(self, state):
+        self.transcribe_button.config(state=state)
+        self.file_button.config(state=state)
+        self.lang_menu.config(state=state)
+        self.timeline_menu.config(state=state)
+
+    def display_transcription_result(self, transcription):
+        self.result_text.config(state=tk.NORMAL)
+        self.result_text.delete("1.0", tk.END)
+        self.result_text.insert(tk.END, transcription)
+        self.result_text.config(state=tk.DISABLED)
+
+    def show_success_message(self, message):
+        messagebox.showinfo("Success", message, parent=self.master)
+
+    def show_error_message(self, message):
+        messagebox.showerror("Error", message, parent=self.master)
 
 
 if __name__ == "__main__":
