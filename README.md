@@ -1,5 +1,7 @@
 # OpenAI Whisper Transcription Tool
 
+![Plugin Version](https://img.shields.io/badge/version-1.0.0-brightgreen)
+
 ## Overview
 
 The OpenAI Whisper Transcription Tool is a Python application that leverages the OpenAI Whisper API to transcribe audio files. This tool allows you to specify the language, choose whether to generate a timeline, and then initiate the transcription process.
