@@ -25,6 +25,7 @@ class Application(tk.Frame):
             "No": "text"
         }
         self.create_widgets()
+        self.display_openai_version()
 
     def create_widgets(self):
         # API Key 輸入欄位
@@ -76,6 +77,14 @@ class Application(tk.Frame):
 
         self.result_text = tk.Text(self.master, width=50, height=10, state=tk.DISABLED)
         self.result_text.grid(row=7, column=0, columnspan=2)
+
+        # OpenAI版本信息
+        self.version_label = tk.Label(self.master, text="")
+        self.version_label.grid(row=8, column=0, columnspan=2, pady=10)
+
+    def display_openai_version(self):
+        version = openai.__version__
+        self.version_label.config(text=f"OpenAI library version: {version}")
 
     def select_file(self):
         self.file_name = filedialog.askopenfilename()
